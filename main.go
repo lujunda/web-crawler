@@ -6,6 +6,8 @@ import (
 	_"io"
 	_"os"
 	"os/exec"
+	"time"
+	"sync"
 	"net/http"
 	"regexp"
 	"strings"
@@ -18,10 +20,14 @@ type Web struct {
 	Next   []string
 }
 
-func dfs(url string, m map[string]bool) {
+var ch chan string
+var wg sync.WaitGroup
 
+func dfs(url string, m map[string]bool) {
 	_, ok := m["https://www.ishsh.com"+url]
 	if ok {
+        fmt.Println(<-ch)
+        wg.Done()
 		return
 	} else {
 		m["https://www.ishsh.com"+url] = true
@@ -79,14 +85,26 @@ func dfs(url string, m map[string]bool) {
 
 	}
 
+    fmt.Println(<-ch)
+
 	reg := regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`)
 	nexts := reg.FindAllString(html, -1)
 	for _, v := range nexts {
-		defer dfs("https://www.ishsh.com"+v, m)
+        ch <- v
+        wg.Add(1)
+		go dfs("https://www.ishsh.com"+v, m)
 	}
+    wg.Done()
 }
 
 func main() {
+    ch = make(chan string, 8)
 	m := make(map[string]bool)
-	dfs("https://www.ishsh.com", m)
+
+    ch <- "root"
+    wg.Add(1)
+	go dfs("https://www.ishsh.com", m)
+
+    time.Sleep(time.Second * 5)
+    wg.Wait()
 }
