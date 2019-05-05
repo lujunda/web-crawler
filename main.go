@@ -29,7 +29,7 @@ func dfs(url string, m map[string]bool) {
 	_, ok := m["https://www.ishsh.com"+url]
 	lock.RUnlock()
 	if ok {
-		fmt.Println(<-ch)
+		<-ch
 		wg.Done()
 		return
 	} else {
@@ -72,10 +72,7 @@ func dfs(url string, m map[string]bool) {
 
 		full_cmd := "mkdir -p /data/file/" + dir_name + " && wget " + pics[3] + " -O " + "/data/file/" + dir_name + "/" + file_name + " -P " + "/data/file/" + dir_name
 
-		fmt.Println(full_cmd)
-		out, err := exec.Command("/bin/bash", "-c", full_cmd).Output()
-		fmt.Println(err)
-		fmt.Println(out)
+		exec.Command("/bin/bash", "-c", full_cmd)
 
 		/*
 		   pic, _ := http.Get(pics[3])
@@ -86,7 +83,7 @@ func dfs(url string, m map[string]bool) {
 
 	}
 
-	fmt.Println(<-ch)
+	<-ch
 
 	reg := regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`)
 	nexts := reg.FindAllString(html, -1)
