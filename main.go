@@ -39,6 +39,12 @@ func dfs(url string, m map[string]bool) {
 	}
 
 	resp, _ := http.Get("https://www.ishsh.com" + url)
+	if resp == nil {
+		fmt.Println(url)
+		<-ch
+		wg.Done()
+		return
+	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	html := string(body)
 	resp.Body.Close()
@@ -68,11 +74,11 @@ func dfs(url string, m map[string]bool) {
 
 		file_name = strings.Replace(file_name, " ", "_", -1)
 		dir_name = strings.Replace(dir_name, " ", "_", -1)
-		fmt.Println(file_name)
+		//fmt.Println(file_name)
 
 		full_cmd := "mkdir -p /data/file/" + dir_name + " && wget " + pics[3] + " -O " + "/data/file/" + dir_name + "/" + file_name + " -P " + "/data/file/" + dir_name
 
-		exec.Command("/bin/bash", "-c", full_cmd)
+		exec.Command("/bin/bash", "-c", full_cmd).Output()
 
 		/*
 		   pic, _ := http.Get(pics[3])
