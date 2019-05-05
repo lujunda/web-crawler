@@ -33,7 +33,7 @@ func dfs(url string, m map[string]bool) {
 		m["https://www.ishsh.com"+url] = true
 	}
 
-	resp, _ := http.Get(url)
+	resp, _ := http.Get("https://www.ishsh.com"+url)
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -92,7 +92,7 @@ func dfs(url string, m map[string]bool) {
 	for _, v := range nexts {
         ch <- v
         wg.Add(1)
-		go dfs("https://www.ishsh.com"+v, m)
+		go dfs(v, m)
 	}
     wg.Done()
 }
@@ -103,7 +103,7 @@ func main() {
 
     ch <- "root"
     wg.Add(1)
-	go dfs("https://www.ishsh.com", m)
+	go dfs("/", m)
 
     time.Sleep(time.Second * 5)
     wg.Wait()
