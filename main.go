@@ -39,10 +39,9 @@ func dfs(url string, m map[string]bool) {
 	}
 
 	resp, _ := http.Get("https://www.ishsh.com" + url)
-	defer resp.Body.Close()
-
 	body, _ := ioutil.ReadAll(resp.Body)
 	html := string(body)
+	resp.Body.Close()
 
 	reg_pic := regexp.MustCompile(`<a class="image_cx_cont" href="(.+?)" title="(.+)" ><img src="(.+?)"  alt="(.+?)"`)
 	pics := reg_pic.FindStringSubmatch(html)
