@@ -25,6 +25,7 @@ var wg = sync.WaitGroup{}
 var mp = safemap.Create()
 
 func dfs(url string) {
+	ch <- url
 
 	if mp.Get("https://www.ishsh.com" + url) {
 		<-ch
@@ -89,12 +90,13 @@ func dfs(url string) {
 
 	}
 
-	<-ch
 
 	reg := regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`)
 	nexts := reg.FindAllString(html, -1)
+
+	<-ch
+
 	for _, v := range nexts {
-		ch <- v
 		wg.Add(1)
 		go dfs(v)
 	}
@@ -102,7 +104,6 @@ func dfs(url string) {
 }
 
 func main() {
-	ch <- "root"
 	wg.Add(1)
 	go dfs("/")
 	wg.Wait()
