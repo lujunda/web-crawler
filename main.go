@@ -21,30 +21,30 @@ type Web struct {
 
 //map加锁,协程安全.
 type UrlMap struct {
-    m   map[string]bool
-    w   sync.RWMutex
+	m map[string]bool
+	w sync.RWMutex
 }
 
 //设置时加写独占锁
-func (u *UrlMap)set(key string, val bool) {
-    u.w.Lock()
-    defer u.w.Unlock()
+func (u *UrlMap) set(key string, val bool) {
+	u.w.Lock()
+	defer u.w.Unlock()
 
-    u.m[key] = val
+	u.m[key] = val
 }
 
 //获取时加读共享锁
-func (u *UrlMap)get(key string) bool {
-    u.w.RLock()
-    defer u.w.RUnlock()
+func (u *UrlMap) get(key string) bool {
+	u.w.RLock()
+	defer u.w.RUnlock()
 
 	ret, ok := u.m[key]
 
-    if ok {
-        return ret
-    }
+	if ok {
+		return ret
+	}
 
-    return false
+	return false
 }
 
 var ch chan string
@@ -53,13 +53,13 @@ var mp UrlMap
 
 func dfs(url string) {
 
-    if mp.get("https://www.ishsh.com"+url) {
+	if mp.get("https://www.ishsh.com" + url) {
 		<-ch
 		wg.Done()
 		return
-    }
+	}
 
-    mp.set("https://www.ishsh.com"+url, true)
+	mp.set("https://www.ishsh.com"+url, true)
 
 	resp, _ := http.Get("https://www.ishsh.com" + url)
 	if resp == nil {
@@ -67,8 +67,8 @@ func dfs(url string) {
 		<-ch
 		wg.Done()
 
-        mp.set("https://www.ishsh.com"+url, false)
-        dfs(url)
+		mp.set("https://www.ishsh.com"+url, false)
+		dfs(url)
 
 		return
 	}
