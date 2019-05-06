@@ -19,7 +19,7 @@ type Web struct {
 	Next   []string
 }
 
-//map加锁
+//map加锁,协程安全.
 type UrlMap struct {
     m   map[string]bool
     w   sync.RWMutex
@@ -66,6 +66,10 @@ func dfs(url string) {
 		fmt.Println(url)
 		<-ch
 		wg.Done()
+
+        mp.set("https://www.ishsh.com"+url, false)
+        dfs(url)
+
 		return
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
