@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 )
 
 type Web struct {
@@ -20,23 +19,47 @@ type Web struct {
 	Next   []string
 }
 
+//map加锁
+type UrlMap struct {
+    m   map[string]bool
+    w   sync.RWMutex
+}
+
+//设置时加写独占锁
+func (u *UrlMap)set(key string, val bool) {
+    u.w.Lock()
+    defer u.w.Unlock()
+
+    u.m[key] = val
+}
+
+//获取时加读共享锁
+func (u *UrlMap)get(key string) bool {
+    u.w.RLock()
+    defer u.w.RUnlock()
+
+	ret, ok := u.m[key]
+
+    if ok {
+        return ret
+    }
+
+    return false
+}
+
 var ch chan string
 var wg sync.WaitGroup
-var lock sync.RWMutex
+var mp UrlMap
 
-func dfs(url string, m map[string]bool) {
-	lock.RLock()
-	_, ok := m["https://www.ishsh.com"+url]
-	lock.RUnlock()
-	if ok {
+func dfs(url string) {
+
+    if mp.get("https://www.ishsh.com"+url) {
 		<-ch
 		wg.Done()
 		return
-	} else {
-		lock.Lock()
-		m["https://www.ishsh.com"+url] = true
-		lock.Unlock()
-	}
+    }
+
+    mp.set("https://www.ishsh.com"+url, true)
 
 	resp, _ := http.Get("https://www.ishsh.com" + url)
 	if resp == nil {
@@ -96,20 +119,18 @@ func dfs(url string, m map[string]bool) {
 	for _, v := range nexts {
 		ch <- v
 		wg.Add(1)
-		go dfs(v, m)
+		go dfs(v)
 	}
 	wg.Done()
 }
 
 func main() {
 	ch = make(chan string, 40)
-	m := make(map[string]bool)
-	lock = sync.RWMutex{}
+	mp = UrlMap{w: sync.RWMutex{}, m: make(map[string]bool)}
 
 	ch <- "root"
 	wg.Add(1)
-	go dfs("/", m)
+	go dfs("/")
 
-	time.Sleep(time.Second * 5)
 	wg.Wait()
 }
