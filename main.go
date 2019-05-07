@@ -3,10 +3,8 @@ package main
 import (
 	"./lib/safemap"
 	"fmt"
-	_ "io"
 	"io/ioutil"
 	"net/http"
-	_ "os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -27,25 +25,27 @@ var mp = safemap.Create()
 func dfs(url string) {
 	ch <- url
 
-	if mp.Get("https://www.ishsh.com" + url) {
+	if mp.Get(url) {
 		<-ch
 		wg.Done()
 		return
 	}
 
-	mp.Set("https://www.ishsh.com"+url, true)
+	mp.Set(url, true)
 
 	resp, _ := http.Get("https://www.ishsh.com" + url)
 	if resp == nil {
 		fmt.Println(url)
-		<-ch
-		wg.Done()
 
-		mp.Set("https://www.ishsh.com"+url, false)
-		dfs(url)
+		mp.Set(url, false)
+
+		<-ch
+
+		defer func(url string){go dfs(url)}(url)
 
 		return
 	}
+		fmt.Println(url)
 	body, _ := ioutil.ReadAll(resp.Body)
 	html := string(body)
 	resp.Body.Close()
@@ -75,7 +75,7 @@ func dfs(url string) {
 
 		file_name = strings.Replace(file_name, " ", "_", -1)
 		dir_name = strings.Replace(dir_name, " ", "_", -1)
-		//fmt.Println(file_name)
+		fmt.Println(file_name)
 
 		full_cmd := "mkdir -p /data/file/" + dir_name + " && wget " + pics[3] + " -O " + "/data/file/" + dir_name + "/" + file_name + " -P " + "/data/file/" + dir_name
 
@@ -94,12 +94,15 @@ func dfs(url string) {
 	reg := regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`)
 	nexts := reg.FindAllString(html, -1)
 
-	<-ch
 
 	for _, v := range nexts {
-		wg.Add(1)
-		go dfs(v)
+        if !mp.Get(v) {
+            wg.Add(1)
+            defer func(v string){go dfs(v)}(v)
+        }
 	}
+
+	<-ch
 	wg.Done()
 }
 
