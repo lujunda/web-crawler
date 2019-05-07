@@ -22,39 +22,12 @@ var ch = make(chan string, 40)
 var wg = sync.WaitGroup{}
 var mp = safemap.Create()
 
-func dfs(url string) {
-	ch <- url
-
-	if mp.Get(url) {
-		<-ch
-		wg.Done()
-		return
-	}
-
-	mp.Set(url, true)
-
-	resp, _ := http.Get("https://www.ishsh.com" + url)
-	if resp == nil {
-		fmt.Println(url)
-
-		mp.Set(url, false)
-
-		<-ch
-
-		defer func(url string){go dfs(url)}(url)
-
-		return
-	}
-		fmt.Println(url)
-	body, _ := ioutil.ReadAll(resp.Body)
-	html := string(body)
-	resp.Body.Close()
-
+func analysis(html string) []string {
 	reg_pic := regexp.MustCompile(`<a class="image_cx_cont" href="(.+?)" title="(.+)" ><img src="(.+?)"  alt="(.+?)"`)
 	pics := reg_pic.FindStringSubmatch(html)
+
 	if len(pics) > 0 {
-		//fmt.Println(pics[4])
-		//fmt.Println(pics[3])
+
 		reg_page := regexp.MustCompile(`(.*?)-第([\d]+)页`)
 		page := reg_page.FindStringSubmatch(pics[4])
 		dir_name := ""
@@ -81,25 +54,46 @@ func dfs(url string) {
 
 		exec.Command("/bin/bash", "-c", full_cmd).Output()
 
-		/*
-		   pic, _ := http.Get(pics[3])
-		   file, err := os.Create(full_name)
-		   fmt.Println(err)
-		   io.Copy(file, pic.Body)
-		*/
-
 	}
 
+	return regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`).FindAllString(html, -1)
+}
 
-	reg := regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`)
-	nexts := reg.FindAllString(html, -1)
+func dfs(url string) {
+	ch <- url
 
+	if mp.Get(url) {
+		<-ch
+		wg.Done()
+		return
+	}
+
+	mp.Set(url, true)
+
+	resp, _ := http.Get("https://www.ishsh.com" + url)
+
+	if resp == nil {
+		fmt.Println(url)
+		mp.Set(url, false)
+		<-ch
+
+		defer func(url string) { go dfs(url) }(url)
+
+		return
+	}
+
+	fmt.Println(url)
+	body, _ := ioutil.ReadAll(resp.Body)
+	html := string(body)
+	resp.Body.Close()
+
+	nexts := analysis(html)
 
 	for _, v := range nexts {
-        if !mp.Get(v) {
-            wg.Add(1)
-            defer func(v string){go dfs(v)}(v)
-        }
+		if !mp.Get(v) {
+			wg.Add(1)
+			defer func(v string) { go dfs(v) }(v)
+		}
 	}
 
 	<-ch
