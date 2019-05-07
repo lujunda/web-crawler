@@ -11,13 +11,6 @@ import (
 	"sync"
 )
 
-type Web struct {
-	Url    string
-	Html   string
-	Target []string
-	Next   []string
-}
-
 var ch = make(chan string, 40)
 var wg = sync.WaitGroup{}
 var mp = safemap.Create()
