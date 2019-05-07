@@ -41,7 +41,6 @@ func analysis(html string) []string {
 
 		file_name = strings.Replace(file_name, " ", "_", -1)
 		dir_name = strings.Replace(dir_name, " ", "_", -1)
-		fmt.Println(file_name)
 
 		full_cmd := "mkdir -p /data/file/" + dir_name + " && wget " + pics[3] + " -O " + "/data/file/" + dir_name + "/" + file_name + " -P " + "/data/file/" + dir_name
 
@@ -54,43 +53,40 @@ func analysis(html string) []string {
 
 func dfs(url string) {
 	ch <- url
+	nexts := []string{}
 
-	if mp.Get(url) {
+	defer func() {
 		<-ch
+
+		for _, v := range nexts {
+			if !mp.Get(v) {
+				wg.Add(1)
+				go dfs(v)
+			}
+		}
+
 		wg.Done()
+	}()
+
+    //避免重复抓取页面
+	if mp.Get(url) {
 		return
 	}
-
 	mp.Set(url, true)
 
+    //http
 	resp, _ := http.Get("https://www.ishsh.com" + url)
-
 	if resp == nil {
-		fmt.Println(url)
-		mp.Set(url, false)
-		<-ch
-
-		defer func(url string) { go dfs(url) }(url)
-
+        fmt.Println(url)
+		nexts = []string{url}
 		return
 	}
-
-	fmt.Println(url)
 	body, _ := ioutil.ReadAll(resp.Body)
 	html := string(body)
 	resp.Body.Close()
 
-	nexts := analysis(html)
-
-	for _, v := range nexts {
-		if !mp.Get(v) {
-			wg.Add(1)
-			defer func(v string) { go dfs(v) }(v)
-		}
-	}
-
-	<-ch
-	wg.Done()
+    //解析
+	nexts = analysis(html)
 }
 
 func main() {
