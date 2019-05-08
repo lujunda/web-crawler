@@ -1,0 +1,4 @@
+package: web-crawler
+import:
+- package: github.com/PuerkitoBio/goquery
+  version: ~1.5.0

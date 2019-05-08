@@ -5,10 +5,12 @@ import (
 	"./lib/safemap"
 	"./lib/safequeue"
 	"fmt"
-	"io/ioutil"
+	"github.com/PuerkitoBio/goquery"
+	_ "io/ioutil"
 	"net/http"
-	"regexp"
+	//"regexp"
 	"strings"
+	"strconv"
 	"time"
 )
 
@@ -22,44 +24,41 @@ var running = make(chan int, 40)
 var visited = safemap.Create()
 
 //对应具体网站(www.ishsh.com)的爬虫逻辑,待独立封装todo...
-func analysis(html string) []string {
-	reg_pic := regexp.MustCompile(`<a class="image_cx_cont" href="(.+?)" title="(.+)" ><img src="(.+?)"  alt="(.+?)"`)
-	pics := reg_pic.FindStringSubmatch(html)
-
-	if len(pics) > 0 {
-
-		reg_page := regexp.MustCompile(`(.*?)-第([\d]+)页`)
-		page := reg_page.FindStringSubmatch(pics[4])
-		dir_name := ""
-		file_name := ""
-		if len(page) > 0 {
-			dir_name = page[1]
-			file_name = pics[4]
-		} else {
-			dir_name = pics[4]
-			file_name = pics[4] + "-第1页"
+func analysis(doc *goquery.Document) (ret []string) {
+	
+	doc.Find(".post-thumbnail").Each(func(i int, s *goquery.Selection) {
+		href, ok := s.Find("a").Attr("href")
+		if ok {
+			ret = append(ret, href)
 		}
-
-		reg_fmt := regexp.MustCompile(`[\.]{1}([a-zA-Z]+?)$`)
-		file_fmt := reg_fmt.FindStringSubmatch(pics[3])
-		if len(file_fmt) > 0 {
-			file_name = file_name + file_fmt[0]
+	})
+	doc.Find(".page-numbers").Each(func(i int, s *goquery.Selection) {
+		href, ok := s.Attr("href")
+		if ok {
+			ret = append(ret, href)
 		}
-
-		file_name = strings.Replace(file_name, " ", "_", -1)
-		dir_name = strings.Replace(dir_name, " ", "_", -1)
-
-		fmt.Println(pics[3])
-		chttp.GetPic(pics[3], "/data/file/"+file_name)
-	}
-
-	return regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`).FindAllString(html, -1)
+	})
+	doc.Find(".image_cx_cont img").Each(func(i int, s *goquery.Selection) {
+		src, ok := s.Attr("src")
+		if ok {
+			title := doc.Find("h1").Text()
+			title = strings.Replace(title, "(", "_", -1)
+			title = strings.Replace(title, ")", "_", -1)
+			title = strings.Replace(title, "/", "_", -1)
+			title = strings.Replace(title, " ", "_", -1)
+			chttp.GetPic(src, "/data/file/" + title + ".jpg")
+			fmt.Println("/data/file/" + title + ".jpg")
+		}
+	})
+	return
 }
 
 func main() {
 
 	//起始路径,待独立封装todo...
-	queue.Push("/")
+	for i:=1; i <= 30; i++ {
+		queue.Push("/mingzhan/page/" + strconv.Itoa(i))
+	}
 
 	for true {
 		if queue.Len() > 0 {
@@ -89,12 +88,12 @@ func main() {
 
 					return
 				}
-				body, _ := ioutil.ReadAll(resp.Body)
-				html := string(body)
-				resp.Body.Close()
+				defer resp.Body.Close()
+
+				doc, _ := goquery.NewDocumentFromReader(resp.Body)
 
 				//解析
-				nexts := analysis(html)
+				nexts := analysis(doc)
 				for _, v := range nexts {
 					if !visited.Get(v) {
 						queue.Push(v)
