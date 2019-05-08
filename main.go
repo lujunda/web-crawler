@@ -50,53 +50,55 @@ func analysis(html string) []string {
 	return regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`).FindAllString(html, -1)
 }
 
-func handle(url string) {
-    defer func() { <- running } ()
-
-	//避免重复抓取页面
-	if mp.Get(url) {
-		return
-	}
-	mp.Set(url, true)
-
-	//http
-	resp, _ := http.Get("https://www.ishsh.com" + url)
-	if resp == nil {
-		fmt.Println(url)
-
-	    mp.Set(url, false)
-        queue.Push(url)
-
-		return
-	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	html := string(body)
-	resp.Body.Close()
-
-	//解析
-	nexts := analysis(html)
-    for _, v := range nexts {
-        if !mp.Get(v) {
-            queue.Push(v)
-        }
-    }
-}
-
 func main() {
-    queue.Push("/")
-    for true {
-        if queue.Len() > 0 {
-            //fmt.Println(queue.Len())
-            fmt.Println(len(running))
-            path, _ := queue.Pop()
-            running <- 1
-            go handle(path)
-            continue
-        }
-        if len(running) > 0 {
-            time.Sleep(1 * time.Second)
-            continue
-        }
-        break
-    }
+	queue.Push("/")
+	for true {
+		if queue.Len() > 0 {
+
+			//fmt.Println(queue.Len())
+			//fmt.Println(len(running))
+
+			path, _ := queue.Pop()
+			running <- 1
+
+			go func(url string) {
+				defer func() { <-running }()
+
+				//避免重复抓取页面
+				if mp.Get(url) {
+					return
+				}
+				mp.Set(url, true)
+
+				//http
+				resp, _ := http.Get("https://www.ishsh.com" + url)
+				if resp == nil {
+					fmt.Println(url)
+
+					mp.Set(url, false)
+					queue.Push(url)
+
+					return
+				}
+				body, _ := ioutil.ReadAll(resp.Body)
+				html := string(body)
+				resp.Body.Close()
+
+				//解析
+				nexts := analysis(html)
+				for _, v := range nexts {
+					if !mp.Get(v) {
+						queue.Push(v)
+					}
+				}
+			}(path)
+
+			continue
+		}
+		if len(running) > 0 {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
+	}
 }
