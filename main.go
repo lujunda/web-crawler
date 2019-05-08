@@ -18,7 +18,7 @@ var queue = safequeue.Create()
 //管道限制协程并发数量
 var running = make(chan int, 40)
 
-//避免
+//避免重复抓取
 var visited = safemap.Create()
 
 //对应具体网站(www.ishsh.com)的爬虫逻辑,待独立封装todo...
