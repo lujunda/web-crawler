@@ -58,7 +58,7 @@ func analysis(html string) []string {
 
 func main() {
 
-    //起始路径,待独立封装todo...
+	//起始路径,待独立封装todo...
 	queue.Push("/")
 
 	for true {
