@@ -12,10 +12,16 @@ import (
 	"time"
 )
 
+//待处理队列
 var queue = safequeue.Create()
-var running = make(chan int, 40)
-var mp = safemap.Create()
 
+//管道限制协程并发数量
+var running = make(chan int, 40)
+
+//避免
+var visited = safemap.Create()
+
+//对应具体网站(www.ishsh.com)的爬虫逻辑,待独立封装todo...
 func analysis(html string) []string {
 	reg_pic := regexp.MustCompile(`<a class="image_cx_cont" href="(.+?)" title="(.+)" ><img src="(.+?)"  alt="(.+?)"`)
 	pics := reg_pic.FindStringSubmatch(html)
@@ -51,7 +57,10 @@ func analysis(html string) []string {
 }
 
 func main() {
+
+    //起始路径,待独立封装todo...
 	queue.Push("/")
+
 	for true {
 		if queue.Len() > 0 {
 
@@ -65,17 +74,17 @@ func main() {
 				defer func() { <-running }()
 
 				//避免重复抓取页面
-				if mp.Get(url) {
+				if visited.Get(url) {
 					return
 				}
-				mp.Set(url, true)
+				visited.Set(url, true)
 
-				//http
+				//http,todo...
 				resp, _ := http.Get("https://www.ishsh.com" + url)
 				if resp == nil {
 					fmt.Println(url)
 
-					mp.Set(url, false)
+					visited.Set(url, false)
 					queue.Push(url)
 
 					return
@@ -87,7 +96,7 @@ func main() {
 				//解析
 				nexts := analysis(html)
 				for _, v := range nexts {
-					if !mp.Get(v) {
+					if !visited.Get(v) {
 						queue.Push(v)
 					}
 				}
