@@ -3,16 +3,17 @@ package main
 import (
 	chttp "./lib/http"
 	"./lib/safemap"
+	"./lib/safequeue"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
-	"sync"
+	"time"
 )
 
-var ch = make(chan string, 40)
-var wg = sync.WaitGroup{}
+var queue = safequeue.Create()
+var running = make(chan int, 40)
 var mp = safemap.Create()
 
 func analysis(html string) []string {
@@ -49,22 +50,8 @@ func analysis(html string) []string {
 	return regexp.MustCompile(`/([\d]+)([\_]*)([\d]*).html`).FindAllString(html, -1)
 }
 
-func dfs(url string) {
-	ch <- url
-	nexts := []string{}
-
-	defer func() {
-		<-ch
-
-		for _, v := range nexts {
-			if !mp.Get(v) {
-				wg.Add(1)
-				go dfs(v)
-			}
-		}
-
-		wg.Done()
-	}()
+func handle(url string) {
+    defer func() { <- running } ()
 
 	//避免重复抓取页面
 	if mp.Get(url) {
@@ -76,7 +63,10 @@ func dfs(url string) {
 	resp, _ := http.Get("https://www.ishsh.com" + url)
 	if resp == nil {
 		fmt.Println(url)
-		nexts = []string{url}
+
+	    mp.Set(url, false)
+        queue.Push(url)
+
 		return
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -84,11 +74,29 @@ func dfs(url string) {
 	resp.Body.Close()
 
 	//解析
-	nexts = analysis(html)
+	nexts := analysis(html)
+    for _, v := range nexts {
+        if !mp.Get(v) {
+            queue.Push(v)
+        }
+    }
 }
 
 func main() {
-	wg.Add(1)
-	go dfs("/")
-	wg.Wait()
+    queue.Push("/")
+    for true {
+        if queue.Len() > 0 {
+            //fmt.Println(queue.Len())
+            fmt.Println(len(running))
+            path, _ := queue.Pop()
+            running <- 1
+            go handle(path)
+            continue
+        }
+        if len(running) > 0 {
+            time.Sleep(1 * time.Second)
+            continue
+        }
+        break
+    }
 }
