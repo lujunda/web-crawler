@@ -1,18 +1,24 @@
 package main
 
 import (
-	chttp "./lib/http"
-	"./lib/safemap"
-	"./lib/safequeue"
-	"fmt"
+	web "web-crawler/webs/www.ishsh.com"
+	"web-crawler/lib/safemap"
+	"web-crawler/lib/safequeue"
 	"github.com/PuerkitoBio/goquery"
-	_ "io/ioutil"
+	"fmt"
 	"net/http"
-	//"regexp"
-	"strings"
-	"strconv"
 	"time"
 )
+
+/**
+ * 实现一个页面爬虫需要实现两个方法:
+ * root()方法返回爬虫的起始路径,如["www.abc.com/main/page/1", "www.abc.com/main/page/2"].
+ * analysis()方法执行对每个页面的具体分析逻辑,返回值为需要进一步分析的地址的切片.
+ */
+type Template interface {
+    Root()                          []string
+    Analysis(doc *goquery.Document) []string
+}
 
 //待处理队列
 var queue = safequeue.Create()
@@ -23,48 +29,18 @@ var running = make(chan int, 40)
 //避免重复抓取
 var visited = safemap.Create()
 
-//对应具体网站(www.ishsh.com)的爬虫逻辑,待独立封装todo...
-func analysis(doc *goquery.Document) (ret []string) {
-	
-	doc.Find(".post-thumbnail").Each(func(i int, s *goquery.Selection) {
-		href, ok := s.Find("a").Attr("href")
-		if ok {
-			ret = append(ret, href)
-		}
-	})
-	doc.Find(".page-numbers").Each(func(i int, s *goquery.Selection) {
-		href, ok := s.Attr("href")
-		if ok {
-			ret = append(ret, href)
-		}
-	})
-	doc.Find(".image_cx_cont img").Each(func(i int, s *goquery.Selection) {
-		src, ok := s.Attr("src")
-		if ok {
-			title := doc.Find("h1").Text()
-			title = strings.Replace(title, "(", "_", -1)
-			title = strings.Replace(title, ")", "_", -1)
-			title = strings.Replace(title, "/", "_", -1)
-			title = strings.Replace(title, " ", "_", -1)
-			chttp.GetPic(src, "/data/file/" + title + ".jpg")
-			fmt.Println("/data/file/" + title + ".jpg")
-		}
-	})
-	return
-}
-
 func main() {
 
-	//起始路径,待独立封装todo...
-	for i:=1; i <= 30; i++ {
-		queue.Push("/mingzhan/page/" + strconv.Itoa(i))
+    var t Template
+    t = web.Web{}
+
+    //将起始路径压入待处理队列
+	for _, v := range t.Root() {
+		queue.Push(v)
 	}
 
 	for true {
 		if queue.Len() > 0 {
-
-			//fmt.Println(queue.Len())
-			//fmt.Println(len(running))
 
 			path, _ := queue.Pop()
 			running <- 1
@@ -78,8 +54,8 @@ func main() {
 				}
 				visited.Set(url, true)
 
-				//http,todo...
-				resp, _ := http.Get("https://www.ishsh.com" + url)
+				//http
+				resp, _ := http.Get(url)
 				if resp == nil {
 					fmt.Println(url)
 
@@ -93,7 +69,7 @@ func main() {
 				doc, _ := goquery.NewDocumentFromReader(resp.Body)
 
 				//解析
-				nexts := analysis(doc)
+				nexts := t.Analysis(doc)
 				for _, v := range nexts {
 					if !visited.Get(v) {
 						queue.Push(v)
