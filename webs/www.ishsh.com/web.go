@@ -5,7 +5,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"strconv"
 	"strings"
-	chttp "web-crawler/lib/http"
+	"web-crawler/lib/http"
 )
 
 type Web struct {
@@ -34,7 +34,7 @@ func (w Web) Analysis(doc *goquery.Document) (ret []string) {
 			title = strings.Replace(title, ")", "_", -1)
 			title = strings.Replace(title, "/", "_", -1)
 			title = strings.Replace(title, " ", "_", -1)
-			chttp.GetPic(src, "/data/file/"+title+".jpg")
+			http.GetPic(src, "/data/file/"+title+".jpg")
 			fmt.Println("/data/file/" + title + ".jpg")
 		}
 	})

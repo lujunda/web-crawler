@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"net/http"
-	"time"
+	web "web-crawler/webs/www.ishsh.com"
 	"web-crawler/lib/safemap"
 	"web-crawler/lib/safequeue"
-	web "web-crawler/webs/www.ishsh.com"
+	"github.com/PuerkitoBio/goquery"
+	"fmt"
+	"net/http"
+	"time"
 )
 
 /**
