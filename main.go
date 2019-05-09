@@ -1,13 +1,13 @@
 package main
 
 import (
-	web "web-crawler/webs/www.ishsh.com"
-	"web-crawler/lib/safemap"
-	"web-crawler/lib/safequeue"
-	"github.com/PuerkitoBio/goquery"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"time"
+	"web-crawler/lib/safemap"
+	"web-crawler/lib/safequeue"
+	web "web-crawler/webs/www.ishsh.com"
 )
 
 /**
@@ -16,8 +16,8 @@ import (
  * analysis()方法执行对每个页面的具体分析逻辑,返回值为需要进一步分析的地址的切片.
  */
 type Template interface {
-    Root()                          []string
-    Analysis(doc *goquery.Document) []string
+	Root() []string
+	Analysis(doc *goquery.Document) []string
 }
 
 //待处理队列
@@ -31,10 +31,10 @@ var visited = safemap.Create()
 
 func main() {
 
-    var t Template
-    t = web.Web{}
+	var t Template
+	t = web.Web{}
 
-    //将起始路径压入待处理队列
+	//将起始路径压入待处理队列
 	for _, v := range t.Root() {
 		queue.Push(v)
 	}
@@ -43,6 +43,7 @@ func main() {
 		if queue.Len() > 0 {
 
 			path, _ := queue.Pop()
+			fmt.Println(path)
 			running <- 1
 
 			go func(url string) {
