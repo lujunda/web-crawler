@@ -1,5 +1,5 @@
 # 爬虫
-利用go协程（默认40个协程）实现的web爬虫
+利用go协程（默认40个协程）实现的web爬虫。
 
 # 使用方法
 1. 自定义定义一个包并实现接口`Template`(`main.go`)，可以参考`webs/www.ishish.com/web.go`。
