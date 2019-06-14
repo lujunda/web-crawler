@@ -1,13 +1,25 @@
 hash: 2174c5c93ab50c22b61173b8ac03d116e8071644b0ad4f5c771fdf4a25b324cd
-updated: 2019-05-08T12:02:14.562638319-04:00
+updated: 2019-06-14T13:54:39.094597+08:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 680b6a57bda4f657485ad44bdea42342ead737bc
+- name: github.com/go-sql-driver/mysql
+  version: 972a708cf97995463843c08c8585b26997daf0e1
+- name: github.com/jinzhu/gorm
+  version: 472c70caa40267cb89fd8facb07fe6454b578626
+  subpackages:
+  - dialects/mysql
+- name: github.com/jinzhu/inflection
+  version: 04140366298a54a039076d798123ffa108fff46c
 - name: github.com/PuerkitoBio/goquery
   version: 2d2796f41742ece03e8086188fa4db16a3a0b458
 - name: golang.org/x/net
-  version: f4e77d36d62c17c2336347bb2670ddbd02d092b7
+  version: d28f0bde5980168871434b95cfc858db9f2a7a99
   subpackages:
   - html
   - html/atom
+- name: google.golang.org/appengine
+  version: 54a98f90d1c46b7731eb8fb305d2a321c30ef610
+  subpackages:
+  - cloudsql
 testImports: []
