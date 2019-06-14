@@ -13,7 +13,7 @@ type Record struct {
 }
 
 func (d *Record) GetDatabaseName() string {
-	return "cmlive"
+	return "default_db"
 }
 func (d *Record) TableName() string {
 	return "crawler"
