@@ -7,7 +7,7 @@ import (
 	"time"
 	"web-crawler/lib/safemap"
 	"web-crawler/lib/safequeue"
-	web "web-crawler/webs/www.ishsh.com"
+	web "web-crawler/webs/www.ftmeinv.com"
 )
 
 /**
@@ -17,7 +17,7 @@ import (
  */
 type Template interface {
 	Root() []string
-	Analysis(doc *goquery.Document) []string
+	Analysis(url string, doc *goquery.Document) []string
 }
 
 //待处理队列
@@ -43,7 +43,6 @@ func main() {
 		if queue.Len() > 0 {
 
 			path, _ := queue.Pop()
-			fmt.Println(path)
 			running <- 1
 
 			go func(url string) {
@@ -56,6 +55,7 @@ func main() {
 				visited.Set(url, true)
 
 				//http
+				fmt.Println(url)
 				resp, _ := http.Get(url)
 				if resp == nil {
 					fmt.Println(url)
@@ -70,7 +70,7 @@ func main() {
 				doc, _ := goquery.NewDocumentFromReader(resp.Body)
 
 				//解析
-				nexts := t.Analysis(doc)
+				nexts := t.Analysis(url, doc)
 				for _, v := range nexts {
 					if !visited.Get(v) {
 						queue.Push(v)
